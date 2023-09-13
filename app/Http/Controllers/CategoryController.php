@@ -2,16 +2,29 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreCategoryRequest;
 use App\Models\Category;
-use Illuminate\Http\Request;
-use App\Models\CategoryImage;
-use Illuminate\Support\Facades\File;
+use App\Traits\ApiResponse;
+use App\Services\ImageService;
+use App\Services\CategoryService;
 use App\Http\Resources\CategoryCollection;
+use App\Http\Requests\StoreCategoryRequest;
 use App\Http\Requests\UpdateCategoryRequest;
 
 class CategoryController extends Controller
 {
+    use ApiResponse;
+    protected $categoryService;
+
+    public function __construct(CategoryService $categoryService)
+    {
+        // Se aplica el middleware de autenticación a todos los métodos excepto 'index' y 'show'
+        $this->middleware('auth')->except(['index', 'show']);
+
+        // Asegura que el usuario puede realizar acciones de administrador solo para los métodos 'store' y 'update'
+        $this->middleware('can:admin')->only(['store', 'update']);
+        $this->categoryService = $categoryService;
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -20,20 +33,6 @@ class CategoryController extends Controller
     public function index()
     {
         return new CategoryCollection(Category::all());
-        // $categories = Category::all();
-        // $categories = $categories->map(function ($category) {
-
-        //     return [
-        //         'group_name' => $category->group->name,
-        //         'group_id' => $category->group->id,
-        //         'id' => $category->id,
-        //         'image' => $category->image,
-        //         'name'  => $category->name,
-        //         'images' => $category->images()->select('id', 'name')->get(),
-        //         'show' => $category->isShowed(),
-        //     ];
-        // });
-        // return response()->json(['data' => $categories]);
     }
 
     /**
@@ -42,27 +41,18 @@ class CategoryController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(StoreCategoryRequest $request)
+    public function store(StoreCategoryRequest $request, ImageService $imageService)
     {
-        $user = $request->user();
-        if ($user->role != "admin") {
-            return [
-                'message' => "Usuario NO autorizado",
-                'state' => false
-            ];
+        try {
+            $datos = $request->validated();
+            $category = $this->categoryService->createCategory($datos);
+            $imageService->insertImages(300, 300, 'categories', $category, $datos);
+            return $this->successResponse("Categoría creada", $category, 201);
+        } catch (\Illuminate\Database\QueryException $e) {
+            return $this->errorResponse("Error al crear categoría en la base de datos", $e->getMessage(), 500);
+        } catch (\Exception $e) {
+            return $this->errorResponse("Error inesperado al crear categoría", $e->getMessage());
         }
-
-        $datos = $request->validated();
-        $category = Category::create([
-            'name' => $datos['name'],
-            'group_id' => $datos['group_id'],
-            'suggested' => (bool)($datos['suggested'] ?? false),
-        ]);
-        $category->insertImages($datos);
-        return [
-            'message' => "Categoría creada",
-            'state' => true
-        ];
     }
 
     /**
@@ -91,38 +81,20 @@ class CategoryController extends Controller
      * @param  \App\Models\Category  $category
      * @return \Illuminate\Http\Response
      */
-    public function update(UpdateCategoryRequest $request, Category $category)
+    public function update(UpdateCategoryRequest $request, Category $category, ImageService $imageService)
     {
-
-        $user = $request->user();
-        if (!$user->isAdmin()) {
-            return [
-                'message' => "Usuario NO autorizado",
-                'state' => false
-            ];
-        }
-
-        $datos = $request->validated();
-        $imgs_stored = $category->images()->select('name', 'id')->get();
-        if (isset($datos['images'])) {
-            $category->insertImages($datos);
-            if (count($imgs_stored)) {
-                foreach ($imgs_stored as $imgs) {
-
-                    $path_file = "categories/" . $imgs->name;
-                    if (File::exists($path_file)) {
-                        File::delete($path_file);
-                    }
-                    $toDelete = CategoryImage::find($imgs->id);
-                    $toDelete->delete();
-                }
+        try {
+            $datos = $request->validated();
+            if (isset($datos['images'])) {
+                $imageService->handleCategoryImages($category, $datos);
             }
+            $this->categoryService->updateCategory($category->id, $datos);
+            return $this->successResponse("Categoría actualizada");
+        } catch (\Illuminate\Database\QueryException $e) {
+            return $this->errorResponse('Error al actualizar categoría en la base de datos', $e->getMessage());
+        } catch (\Exception $e) {
+            return $this->errorResponse('Error inesperado actualizando categoría', $e->getMessage());
         }
-        $category->updateCategory($datos);
-        return [
-            'message' => "Categoría actualizada",
-            'state' => true
-        ];
     }
 
     /**

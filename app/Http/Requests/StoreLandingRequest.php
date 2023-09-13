@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Models\LandingImage;
 
 class StoreLandingRequest extends FormRequest
 {
@@ -26,17 +27,12 @@ class StoreLandingRequest extends FormRequest
         return [
             'type' => [
                 'required',
-                'numeric'
+                'numeric',
+                'in:' . LandingImage::TYPE_MOBILE . ',' . LandingImage::TYPE_TABLET . ',' . LandingImage::TYPE_DESKTOP
             ],
-            'images' => [
-                'required',
-                'array',
-                'max:1'
-            ],
-            'images.*' => [
+            'image' => [
                 'required',
                 'image',
-                'distinct'
             ]
         ];
     }

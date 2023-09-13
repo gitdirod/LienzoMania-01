@@ -34,14 +34,8 @@ class UpdateMemoryRequest extends FormRequest
                 'required',
                 'max:2024'
             ],
-            'images' => [
-                'array',
-                'max:1'
-            ],
-            'images.*' => [
-                'required',
-                'image',
-                'distinct'
+            'image' => [
+                'image'
             ]
         ];
     }

@@ -34,15 +34,9 @@ class StoreMemoryRequest extends FormRequest
                 'required',
                 'max:2024'
             ],
-            'images' => [
-                'required',
-                'array',
-                'max:1'
-            ],
-            'images.*' => [
+            'image' => [
                 'required',
                 'image',
-                'distinct'
             ]
         ];
     }

@@ -30,17 +30,9 @@ class StoreTypeProductRequest extends FormRequest
                 'string',
                 'max:255'
             ],
-            'images' => [
+            'image' => [
                 'required',
-                'required',
-                'array',
-                'min:1',
-                'max:1'
-            ],
-            'images.*' => [
-                'required',
-                'image',
-                'distinct'
+                'image'
             ]
         ];
     }

@@ -2,13 +2,28 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Size;
+use App\Traits\ApiResponse;
+use Illuminate\Http\Request;
 use App\Http\Requests\StoreSizeRequest;
 use App\Http\Requests\UpdateSizeRequest;
-use App\Models\Size;
-use Illuminate\Http\Request;
+use App\Services\SizeService;
 
 class SizeController extends Controller
 {
+    use ApiResponse;
+    protected $sizeService;
+
+    public function __construct(SizeService $sizeService)
+    {
+        // Se aplica el middleware de autenticación a todos los métodos excepto 'index' y 'show'
+        $this->middleware('auth')->except(['index', 'show']);
+
+        // Asegura que el usuario puede realizar acciones de administrador solo para los métodos 'store' y 'update'
+        $this->middleware('can:admin')->only(['store', 'update']);
+
+        $this->sizeService = $sizeService;
+    }
     /**
      * Display a listing of the resource.
      *
@@ -16,10 +31,8 @@ class SizeController extends Controller
      */
     public function index()
     {
-        //
-        return [
-            'data' => Size::all()
-        ];
+        $sizes = Size::all();
+        return $this->successResponse('Sizes retrieved successfully.', $sizes);
     }
 
     /**
@@ -30,24 +43,14 @@ class SizeController extends Controller
      */
     public function store(StoreSizeRequest $request)
     {
-        //
-        if ($request->user()->role != "admin") {
-            return [
-                'state' => false,
-                'message' => 'Usuario no autorizado'
-            ];
+        try {
+            $data = $request->validated();
+            $new_size = $this->sizeService->createSize($data['name']);
+
+            return $this->successResponse('Tamaño creado correctamente.', $new_size, 201);
+        } catch (\Exception $e) {
+            return $this->errorResponse("Error inesperado al crear el tamaño", $e->getMessage());
         }
-
-        $data = $request->validated();
-        $new_memory = new Size();
-
-        $new_memory->name = $data['name'];
-        $new_memory->save();
-
-        return [
-            'state' => true,
-            'message' => 'Tamaño creado correctamente.'
-        ];
     }
 
     /**
@@ -70,20 +73,15 @@ class SizeController extends Controller
      */
     public function update(UpdateSizeRequest $request, Size $size)
     {
-        if ($request->user()->role != "admin") {
-            return [
-                'state' => false,
-                'message' => 'Usuario no autorizado'
-            ];
-        }
-        $data = $request->validated();
+        try {
+            $data = $request->validated();
 
-        $size->name = $data['name'];
-        $size->save();
-        return [
-            'state' => true,
-            'message' => 'Tamaño actualizado.'
-        ];
+            $update_size = $this->sizeService->updateSize($size->id, $data['name']);
+
+            return $this->successResponse('Tamaño actualizado.', $update_size);
+        } catch (\Exception $e) {
+            return $this->errorResponse('Error inesperado actualizando tamaño', $e->getMessage());
+        }
     }
 
     /**
@@ -92,19 +90,13 @@ class SizeController extends Controller
      * @param  \App\Models\Size  $size
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Request $request, Size $size)
+    public function destroy(Size $size)
     {
-        if ($request->user()->role != "admin") {
-            return [
-                'state' => false,
-                'message' => 'Usuario no autorizado'
-            ];
+        try {
+            $this->sizeService->deleteSize($size->id);
+            return $this->successResponse('Tamaño eliminado');
+        } catch (\Exception $e) {
+            return $this->errorResponse('Error inesperado al eliminar tamaño', $e->getMessage());
         }
-        $size->delete();
-        return [
-            'state' => true,
-            'message' => 'Tamaño eliminado',
-            'size' => $size
-        ];
     }
 }

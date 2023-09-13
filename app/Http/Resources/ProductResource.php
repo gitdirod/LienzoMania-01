@@ -17,7 +17,7 @@ class ProductResource extends JsonResource
         $type_product = $this->typeProduct;
         $group = $this->category->group;
 
-        return [
+        $data = [
             'category' => [
                 'id' => $this->category_id,
                 'name' => $this->category->name,
@@ -40,11 +40,17 @@ class ProductResource extends JsonResource
             'number_color' => $this->number_color,
             'price' => $this->price,
             'units' => $this->units,
-            'purchased' => $this->purchased,
-            'sold' => $this->sold,
             'description' => $this->description,
             'available' => $this->units > 0 ? $this->available : false,
             'images' => $this->images()->select('id', 'name')->get(),
         ];
+
+        // Añadir el campo "sold" si el usuario es administrador
+        if ($request->user() && $request->user()->isAdmin()) {
+            $data['sold'] = $this->sold;
+            $data['purchased'] = $this->purchased;
+        }
+
+        return $data;
     }
 }

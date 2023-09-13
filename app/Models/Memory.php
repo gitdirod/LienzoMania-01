@@ -12,6 +12,10 @@ use Illuminate\Support\Facades\File;
 class Memory extends Model
 {
     use HasFactory;
+
+    const IMAGE_WIDTH = 500;
+    const IMAGE_HIGTH = 500;
+
     protected $fillable = [
         'name',
         'description',

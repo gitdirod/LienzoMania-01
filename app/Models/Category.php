@@ -28,6 +28,10 @@ class Category extends Model
     {
         return $this->hasMany(Product::class, 'category_id');
     }
+    public function images()
+    {
+        return $this->hasMany(CategoryImage::class, 'category_id');
+    }
     public function isShowed()
     {
         $products = $this->products()->get();
@@ -37,46 +41,5 @@ class Category extends Model
 
         $isShow = $thereProducts->isNotEmpty();
         return $isShow ? true : false;
-    }
-    public function images()
-    {
-        return $this->hasMany(CategoryImage::class, 'category_id');
-    }
-    public function updateCategory(array $toUpdate)
-    {
-        $this->name = $toUpdate["name"];
-        $this->group_id = $toUpdate["group_id"];
-        $this->suggested = (bool)($toUpdate['suggested'] ?? false);
-        $this->save();
-    }
-    public function insertImages(array $datos)
-    {
-        foreach ($datos['images'] as $image) {
-            $name_image = Str::uuid() . "." . $image->extension();
-            $image_server = ImageIntervention::make($image);
-            $image_server->resize(300, 300);
-            $image_path = public_path('categories') . '/' . $name_image;
-            $image_server->save($image_path);
-
-            CategoryImage::create([
-                'category_id' => $this->id,
-                'name' => $name_image,
-            ]);
-        }
-    }
-    public function deleteImages(array $datos)
-    {
-
-        if (isset($datos)) {
-            foreach ($datos as $obj) {
-
-                $path_file = "categories/" . $obj->name;
-                if (File::exists($path_file)) {
-                    File::delete($path_file);
-                }
-                $toDelete = ProductImage::find($obj->id);
-                $toDelete->delete();
-            }
-        }
     }
 }

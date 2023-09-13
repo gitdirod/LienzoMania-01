@@ -30,17 +30,9 @@ class UpdateTypeProductRequest extends FormRequest
                 'string',
                 'max:255'
             ],
-            'images' => [
+            'image' => [
                 'sometimes',
-                'required',
-                'array',
-                'min:1',
-                'max:1'
-            ],
-            'images.*' => [
-                'required',
                 'image',
-                'distinct'
             ]
         ];
     }

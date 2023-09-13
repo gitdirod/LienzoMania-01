@@ -2,12 +2,26 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreLandingRequest;
+use App\Traits\ApiResponse;
 use App\Models\LandingImage;
 use Illuminate\Http\Request;
+use App\Services\LandingImageService;
+use App\Http\Requests\StoreLandingRequest;
+use App\Services\ImageService;
 
 class LandingImageController extends Controller
 {
+    use ApiResponse;
+    protected $landingImageService;
+
+    public function __construct(LandingImageService $landingImageService)
+    {
+        $this->middleware('auth')->except(['index', 'show']);
+        $this->middleware('can:admin')->only(['store', 'update', 'destroy']);
+        $this->landingImageService = $landingImageService;
+    }
+
+
     /**
      * Display a listing of the resource.
      *
@@ -15,13 +29,13 @@ class LandingImageController extends Controller
      */
     public function index()
     {
-        return [
-            "data" => [
-                0 => LandingImage::where('type', 0)->first(),
-                1 => LandingImage::where('type', 1)->first(),
-                2 => LandingImage::where('type', 2)->first(),
-            ]
+        $data = [
+            'mobile' => LandingImage::where('type', LandingImage::TYPE_MOBILE)->first(),
+            'tablet' => LandingImage::where('type', LandingImage::TYPE_TABLET)->first(),
+            'desktop' => LandingImage::where('type', LandingImage::TYPE_DESKTOP)->first(),
         ];
+
+        return $this->successResponse('Imagenes recuperadas correctamente.', $data);
     }
 
     /**
@@ -30,69 +44,26 @@ class LandingImageController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(StoreLandingRequest $request)
+    public function store(StoreLandingRequest $request, ImageService $imageService)
     {
         $datos =  $request->validated();
-        $user = $request->user();
-        if ($user->role != "admin") {
-            return [
-                'message' => "Usuario NO autorizado",
-                'state' => false
-            ];
+        $size = LandingImage::SIZES[$datos['type']] ?? null;
+        if (!$size) {
+            return $this->errorResponse('Error al crear landing.', 'Dimensiones incorrectas');
         }
 
-        $w = 0;
-        $h = 0;
-        if ($datos['type'] == 0) {
-            $w = 600;
-            $h = 1000;
-        } elseif ($datos['type'] == 1) {
-            $w = 1200;
-            $h = 1200;
-        } elseif ($datos['type'] == 2) {
-            $w = 3200;
-            $h = 1200;
-        } else {
-            return [
-                "message" => "Dimensiones incorrectas",
-                "state" => false
-            ];
+        $landing = LandingImage::where("type", $datos['type'])->first();
+
+        if ($landing) {
+            $imageService->deleteImage('landings', $landing->name);
+            $name_image = $imageService->insertImage($size['w'], $size['h'], 'landings', $datos['image']);
+            $this->landingImageService->updateLanding($landing->id, $datos, $name_image);
+            return $this->successResponse('Landing actualizado correctamente.');
         }
 
-        if ($user->role == 'admin') {
-            $find_item = LandingImage::where("type", $datos['type'])->first();
-            if (empty($find_item)) {
-                $landing = new LandingImage;
-
-                $landing->name = $landing->saveImage($datos['images'], $w, $h);
-                $landing->type = $datos['type'];
-                $landing->save();
-
-                return  [
-                    "data" => $landing,
-                    "state" => true,
-                    "message" => "Creado correctamente."
-                ];
-            } else {
-                $landing = LandingImage::find($find_item->id);
-
-                $landing->deleteImage();
-
-                $landing->name = $landing->saveImage($datos['images'], $w, $h);
-                $landing->type = $datos['type'];
-                $landing->save();
-
-                return  [
-                    "data" => $landing,
-                    "state" => true,
-                    "message" => "Actualizado correctamente."
-                ];
-            }
-        }
-        return [
-            "message" => "Usuario no valido",
-            "state" => false
-        ];
+        $name_image = $imageService->insertImage($size['w'], $size['h'], 'landings', $datos['image']);
+        $new_landing = $this->landingImageService->createLandingImage($datos, $name_image);
+        return $this->successResponse('Landing creado correctamente.', $new_landing, 201);
     }
 
     /**
@@ -129,3 +100,11 @@ class LandingImageController extends Controller
         //
     }
 }
+
+
+
+// $new_landing = new LandingImage;
+
+            // $new_landing->name = $new_landing->saveImage($datos['images'], $w, $h);
+            // $new_landing->type = $datos['type'];
+            // $new_landing->save();
