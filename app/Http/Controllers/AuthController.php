@@ -16,7 +16,7 @@ class AuthController extends Controller
     public function index(Request $request)
     {
         if (Auth::user() && Auth::user()->role == 'admin') {
-            return new UserCollection(User::orderBy('id', 'DESC')->get());
+            return new UserCollection(User::orderBy('id', 'DESC')->with('phones')->get());
         }
         return Auth::user();
     }

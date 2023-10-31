@@ -32,15 +32,18 @@ class StoreOrderRequest extends FormRequest
                 'required',
                 'numeric'
             ],
-            'address_envoice_id' => [
+            'addresses' => [
+                'required',
+                'array'
+            ],
+            'addresses.send_id' => [
                 'required',
                 'numeric'
             ],
-            'address_send_id' => [
+            'addresses.envoice_id' => [
                 'required',
                 'numeric'
             ],
-
             'products' => [
                 'required',
                 'array',
@@ -55,14 +58,9 @@ class StoreOrderRequest extends FormRequest
                 'numeric',
             ],
 
-            'images' => [
-                'array',
-                'max:1'
-            ],
-            'images.*' => [
-                'required',
+            'image' => [
                 'image',
-                'distinct'
+                'sometimes'
             ]
         ];
     }

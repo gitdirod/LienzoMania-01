@@ -17,16 +17,11 @@ class InventoryController extends Controller
     public function index()
     {
         // Obtén la colección de productos con relaciones
-        $products = Product::with('purchaseProducts.purchase.user', 'orderProducts.order.user')->get();
+        $products = Product::with('purchaseOrderProducts.purchaseOrder.user', 'orderProducts.order.user')->get();
 
         // Devuelve los datos en formato JSON como respuesta
         return response()->json(['data' => $products]);
     }
-    // $purchaseProducts = PurchaseProduct::with('purchase')->get();
-    // $purchaseProducts->each(function ($purchaseProduct) {
-    //     $purchaseProduct->user = collect([$purchaseProduct->product_id]);
-    // });
-    // return $purchaseProducts;
 
     /**
      * Store a newly created resource in storage.

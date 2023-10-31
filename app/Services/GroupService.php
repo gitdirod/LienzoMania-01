@@ -13,12 +13,7 @@ class GroupService
 
     public function updateGroup($id, $name)
     {
-        $group = Group::find($id);
-
-        if (!$group) {
-            throw new \Exception("Grupo con ID $id no encontrado");
-        }
-
+        $group = Group::findOrFail($id);
         $group->name = $name;
         $group->save();
         return $group;

@@ -9,11 +9,24 @@ use App\Http\Resources\ProductCollection;
 use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
 use App\Models\ProductPrice;
+use App\Traits\ApiResponse;
 
 Cache::flush();
 
 class ProductController extends Controller
 {
+    use ApiResponse;
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function publicIndex()
+    {
+        $products = new ProductCollection(Product::orderBy('id', 'DESC')->get());
+        return $this->successResponse('Productos recuperados', $products);
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -120,15 +133,6 @@ class ProductController extends Controller
 
         if (isset($datos['images'])) {
             $product->insertImages($datos);
-            // if(isset($datos['deleted'])){
-            //     $product->deleteImages($datos['deleted']);
-            // }
-            // $product->updateProduct($datos);
-            // return [
-            //     'message' => "Producto actualizado",
-            //     // 'Product' => $product,
-            //     'state' => true
-            // ];
         }
 
         $imgs_stored = $product->images()->get();
@@ -137,11 +141,6 @@ class ProductController extends Controller
             if (count($imgs_stored) > count($datos['deleted'])) {
 
                 $product->deleteImages($datos['deleted']);
-                // $product->updateProduct($datos);
-                // return [
-                //     'message' => "Producto actualizado",
-                //     'state' => true
-                // ];
             } else {
                 return response()->json(array(
                     'message' => "El producto debe tener al menos una imagen.",

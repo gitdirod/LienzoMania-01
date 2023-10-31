@@ -2,13 +2,24 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreAddressRequest;
 use App\Models\Address;
-use App\Models\Phone;
+use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
+use App\Services\AddressService;
+use App\Http\Requests\StoreAddressRequest;
+use App\Services\PhoneService;
 
 class AddressController extends Controller
 {
+    use ApiResponse;
+    protected $addressService;
+
+    public function __construct(AddressService $addressService)
+    {
+        $this->middleware('auth');
+        $this->addressService = $addressService;
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -25,55 +36,31 @@ class AddressController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(StoreAddressRequest $request)
+    // public function store(Request $request)
+    // return response()->json(['dato' => $data]);
+    public function store(StoreAddressRequest $request, PhoneService $phoneService)
     {
-        $data = $request->validated();
-        $user = $request->user();
+        try {
+            $data = $request->validated();
+            $user = $request->user();
 
-        $envoice_address = Address::where('envoice', $data['envoice'])->first();
-        if (isset($envoice_address)) {
-            $envoice_update = Address::find($envoice_address->id);
+            $addres = $this->addressService->findAddress($user, $data);
+            if ($addres) {
+                $phone = $phoneService->updatePhone($addres->phone_id, $data['phone']);
+                $this->addressService->updateAddress($addres, $data, $phone);
+                return $this->successResponse('Datos Actualizados.');
+            }
 
-            $envoice_update->user_id = $user->id;
-            $envoice_update->envoice = $data["envoice"];
-            $envoice_update->people = $data["people"];
-            $envoice_update->ccruc = $data["ccruc"];
-            $envoice_update->city = $data["city"];
-            $envoice_update->address = $data["address"];
-
-            $phone_update = Phone::find($envoice_update->phone_id);
-            $phone_update->number = $data["phone"];
-
-            $phone_update->save();
-            $envoice_update->save();
-
-            return [
-                'message' => 'Datos actualizados',
-                'state' => true,
-                'data' => $envoice_update
-            ];
+            $phone = $phoneService->createPhone($data['phone'], $user);
+            $this->addressService->createAddress($user, $data, $phone);
+            return $this->successResponse('Dirección creada.');
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return $this->errorResponse('Error modelo no encontrado.', $e->getMessage());
+        } catch (\Illuminate\Database\QueryException $e) {
+            return $this->errorResponse('Error al guardar en base de datos.', $e->getMessage());
+        } catch (\Exception $e) {
+            return $this->errorResponse('Error inesperado al guardar.', $e->getMessage());
         }
-
-        $phone = Phone::create([
-            "user_id" => $user->id,
-            "main" => false,
-            "number" => $data["phone"],
-        ]);
-
-        $address = Address::create([
-            "user_id" => $user->id,
-            "envoice" => $data["envoice"],
-            "people" => $data["people"],
-            "ccruc" => $data["ccruc"],
-            "city" => $data["city"],
-            "address" => $data["address"],
-            "phone_id" => $phone->id,
-        ]);
-        return [
-            'message' => 'Dirección creada',
-            'state' => true,
-            'data' => $address
-        ];
     }
 
     /**

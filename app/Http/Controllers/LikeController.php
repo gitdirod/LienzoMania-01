@@ -5,15 +5,25 @@ namespace App\Http\Controllers;
 use App\Models\Like;
 use App\Models\User;
 use App\Models\Product;
+use App\Traits\ApiResponse;
+use App\Models\ProductImage;
 use Illuminate\Http\Request;
+use App\Services\LikeService;
 use Illuminate\Support\Facades\Auth;
-use App\Http\Requests\CreateLikeRequest;
 use App\Http\Requests\ShowLikeRequest;
 use App\Http\Resources\LikeCollection;
-use App\Models\ProductImage;
+use App\Http\Requests\CreateLikeRequest;
 
 class LikeController extends Controller
 {
+    use ApiResponse;
+    protected $likeService;
+
+    public function __construct(LikeService $likeService)
+    {
+        $this->middleware('auth');
+        $this->likeService = $likeService;
+    }
     /**
      * Display a listing of the resource.
      *
@@ -22,15 +32,11 @@ class LikeController extends Controller
     public function index()
     {
         $user = Auth::user();
-        if (isset($user)) {
-            return new LikeCollection(
-                Like::select('id', 'product_id')
-                    ->with('product')
-                    ->where('user_id', Auth::user()->id)
-                    ->orderBy('id', 'DESC')
-                    ->get()
-            );
-        }
+        $likes = $user->likes->map(function ($like) {
+            $like['product'] = $like->product;
+            return $like;
+        });
+        return $this->successResponse('Likes recuperados correctamente.', $likes);
     }
 
     /**
@@ -41,46 +47,15 @@ class LikeController extends Controller
      */
     public function store(CreateLikeRequest $request)
     {
-        $datos = $request->validated();
-
-        $user = User::find(Auth::user()->id);
-        $product = Product::find($datos['product_id']);
-        $like = [];
-
-        if (!empty($product)) {
-            $like = $user->likes->firstWhere('product_id', $product->id);
-        } else {
-            return [
-                'message' => "Producto no existente"
-            ];
+        try {
+            $datos = $request->validated();
+            $response = $this->likeService->toggleLike($request->validated(), Auth::user());
+            return $this->successResponse($response);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return $this->errorResponse("Producto con ID {$datos['product_id']} no encontrado");
+        } catch (\Illuminate\Database\QueryException $e) {
+            return $this->errorResponse('Error al guardar en la base de datos', $e->getMessage());
         }
-
-        if (empty($like)) {
-            if (isset($user) && isset($product)) {
-                Like::create([
-                    'user_id' => $user->id,
-                    'product_id' => $datos['product_id']
-                ]);
-                return [
-                    'like' => true,
-                    'state' => true,
-                    'message' => 'Te gusta!'
-                ];
-            }
-        } else {
-            $like_deleted = Like::find($like->id);
-            $like_deleted->delete();
-            return [
-                'like' => false,
-                'state' => true,
-                'message' => 'No te gusta!'
-            ];
-        }
-
-        return [
-            'message' => "Debes inicar secion",
-            'state' => false,
-        ];
     }
 
     /**

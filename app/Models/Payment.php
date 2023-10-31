@@ -11,6 +11,8 @@ use Intervention\Image\Facades\Image as ImageIntervention;
 class Payment extends Model
 {
     use HasFactory;
+    const IMAGE_WIDTH = 700;
+    const IMAGE_HEIGTH = 700;
 
     protected $fillable = [
         'user_id',

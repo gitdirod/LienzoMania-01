@@ -52,7 +52,7 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(Like::class, 'user_id');
     }
-    public function phone()
+    public function phones()
     {
         return $this->hasMany(Phone::class, 'user_id');
     }
@@ -60,6 +60,18 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(Address::class, 'user_id');
     }
+    public function getAddressesAttribute()
+    {
+        return $this->address()->get()->mapWithKeys(function ($address) {
+            $phone = Phone::find($address->phone_id);
+            unset($phone['user_id']);
+            $address['phone'] = $phone;
+            unset($address['phone_id']);
+            unset($address['user_id']);
+            return [$address->type => $address];
+        });
+    }
+
     public function isAdmin()
     {
         return $this->role === 'admin';

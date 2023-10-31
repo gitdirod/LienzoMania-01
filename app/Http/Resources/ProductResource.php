@@ -21,6 +21,7 @@ class ProductResource extends JsonResource
             'category' => [
                 'id' => $this->category_id,
                 'name' => $this->category->name,
+                'image' => $this->category->image()->first(),
             ],
             'type_product' => [
                 'id' => $this->type_product_id,
@@ -30,6 +31,10 @@ class ProductResource extends JsonResource
             'group' => [
                 'id' => $group->id,
                 'name' => $group->name
+            ],
+            'suggested' => [
+                'group_id' => isset($this->suggested->suggestion_id) ? $this->suggested->suggestion_id : false,
+                'id' => isset($this->suggested->id) ? $this->suggested->id : false,
             ],
             'id' => $this->id,
             'new' => $this->is_new(),
@@ -43,12 +48,16 @@ class ProductResource extends JsonResource
             'description' => $this->description,
             'available' => $this->units > 0 ? $this->available : false,
             'images' => $this->images()->select('id', 'name')->get(),
+            'like' => $this->likedByUser()
         ];
 
         // Añadir el campo "sold" si el usuario es administrador
         if ($request->user() && $request->user()->isAdmin()) {
             $data['sold'] = $this->sold;
             $data['purchased'] = $this->purchased;
+
+            $data['purchase_order_products'] = $this->purchaseOrderProducts()->get();
+            $data['sold_order_products'] = $this->soldOrderProducts()->get();
         }
 
         return $data;

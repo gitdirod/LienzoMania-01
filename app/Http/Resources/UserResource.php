@@ -24,8 +24,8 @@ class UserResource extends JsonResource
             'email_verified_at' => $this->email_verified_at,
             'created_at' => $this->created_at,
             'updated' => $this->updated,
-            'phones' => $this->phone()->get(),
-            'address' => $this->address()->with('phone')->get(),
+            'address' => $this->getAddressesAttribute(),
+            'phone' => $this->phone
 
         ];
     }

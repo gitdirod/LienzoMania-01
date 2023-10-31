@@ -1,0 +1,9 @@
+.note {
+    background-color: orange;
+    border: 2px dashed orangered;
+    padding: 20px;
+}
+
+.page-break {
+    page-break-after: always;
+}

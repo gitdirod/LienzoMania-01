@@ -11,6 +11,9 @@ class OrderPayment extends Model
 {
     use HasFactory;
 
+    const STATE_POR_PAGAR = "POR PAGAR";
+    const STATE_PAGADO = "PAGADO";
+
     protected $fillable = [
         'state',
         'order_id'

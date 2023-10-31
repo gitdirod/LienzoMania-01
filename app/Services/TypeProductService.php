@@ -15,10 +15,7 @@ class TypeProductService
     }
     public function updateTypeProduct($id, $data, $image = null)
     {
-        $type_product = TypeProduct::find($id);
-        if (!$type_product) {
-            throw new \Exception("Tipo de producto con ID $id no encontrado");
-        }
+        $type_product = TypeProduct::findOrFail($id);
         $type_product->name = $data['name'];
         if ($image) {
             $type_product->image = $image;

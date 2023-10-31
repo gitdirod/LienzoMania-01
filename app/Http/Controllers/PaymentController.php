@@ -69,6 +69,10 @@ class PaymentController extends Controller
      */
     public function destroy(Payment $payment)
     {
+        return [
+            'message' => "Comprobante eliminado mentira",
+            'state' => true
+        ];
         $user = Auth::user();
         if (isset($user) && $user->role === 'admin') {
             $path_file = "payments/" . $payment->name;

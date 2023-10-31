@@ -14,4 +14,22 @@ class MemoryService
             'image' => $name_image
         ]);
     }
+
+    public function updateMemory($id, $data, $image_name = null)
+    {
+        $memory_update = Memory::findOrFail($id);
+        if ($image_name) {
+            $memory_update->image = $image_name;
+        }
+        $memory_update->name = $data['name'];
+        $memory_update->description = $data['description'];
+        $memory_update->save();
+        return $memory_update;
+    }
+
+    public function destroyMemory($id)
+    {
+        $memory_destroy = Memory::findOrFail($id);
+        $memory_destroy->delete();
+    }
 }

@@ -9,12 +9,13 @@ use Carbon\Carbon;
 use App\Models\Like;
 use App\Models\Order;
 use App\Models\Category;
-use Hamcrest\Type\IsObject;
+use App\Models\Suggested;
 use Illuminate\Support\Str;
 use App\Models\OrderProduct;
 use App\Models\ProductImage;
-use App\Models\ProductPrice;
-use App\Models\PurchaseProduct;
+use App\Models\SoldOrderProduct;
+use App\Models\PurchaseOrderProduct;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -41,6 +42,26 @@ class Product extends Model
     {
         return $this->belongsTo(Category::class);
     }
+
+
+    public function getLastPurchaseOrderProduct()
+    {
+        return PurchaseOrderProduct::where('product_id', $this->id)
+            ->latest('created_at')
+            ->first();
+    }
+
+    public function getPrice()
+    {
+        $lastPurchaseProduct = $this->getLastPurchaseOrderProduct();
+        return $lastPurchaseProduct ? $lastPurchaseProduct->price : 0;
+    }
+
+
+    public function suggested()
+    {
+        return $this->hasOne(Suggested::class, 'product_id');
+    }
     public function typeProduct()
     {
         return $this->belongsTo(TypeProduct::class, 'type_product_id');
@@ -63,10 +84,15 @@ class Product extends Model
         return $this->hasOne(ProductImage::class, 'product_id')->latestOfMany();
     }
 
-    public function purchaseProducts()
+    public function purchaseOrderProducts()
     {
-        return $this->hasMany(PurchaseProduct::class, 'product_id')->with('purchase');
+        return $this->hasMany(PurchaseOrderProduct::class, 'product_id')->with('purchaseOrder');
     }
+    public function soldOrderProducts()
+    {
+        return $this->hasMany(SoldOrderProduct::class, 'product_id')->with('soldOrder');
+    }
+
     public function orderProducts()
     {
         return $this->hasMany(OrderProduct::class, 'product_id');
@@ -74,11 +100,23 @@ class Product extends Model
 
     public function likes()
     {
-        // return Auth::user()->id;
         return $this->hasMany(Like::class, 'product_id');
-        // return Auth::user();
-        // return $this->hasOne(Like::class, 'product_id')->where('user_id', 6)->latestOfMany();
     }
+
+    public function likedByUser()
+    {
+        // Check if there is an authenticated user
+        if (Auth::check()) {
+            // Use the current user's ID to check if they have liked this product
+            return $this->hasMany(Like::class, 'product_id')
+                ->where('user_id', Auth::user()->id)
+                ->exists();
+        }
+
+        // If there's no authenticated user, return false
+        return false;
+    }
+
 
     public function updateProduct(array $toUpdate)
     {
@@ -114,7 +152,7 @@ class Product extends Model
     public function updateUnits()
     {
         // Actualiza total ingresado "Compras"
-        $purchased_list = PurchaseProduct::where('product_id', $this->id)->pluck('quantity')->toArray();
+        $purchased_list = PurchaseOrderProduct::where('product_id', $this->id)->pluck('quantity')->toArray();
         $purchased_total = array_sum($purchased_list);
         $this->purchased = $purchased_total;
         // $this->save();
@@ -125,7 +163,7 @@ class Product extends Model
         if (is_Object($sold)) {
             foreach ($sold as $sol) {
                 $order = Order::find($sol->order_id);
-                $order_payment = $order->payment()->first();
+                $order_payment = $order->orderPayment()->first();
                 if ($order_payment->state === 'PAGADO') {
                     $salida += $sol->quantity;
                 }
@@ -139,8 +177,8 @@ class Product extends Model
     }
     public function updatePrice()
     {
-        $purchased_list = PurchaseProduct::where('product_id', $this->id)
-            ->orderBy('purchase_id', 'desc')
+        $purchased_list = PurchaseOrderProduct::where('product_id', $this->id)
+            ->orderBy('purchase_order_id', 'desc')
             ->get();
 
         $last_price = $purchased_list->first();

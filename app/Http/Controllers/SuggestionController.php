@@ -28,6 +28,7 @@ class SuggestionController extends Controller
                     'name' => $product->typeProduct->name,
                     'image' => $product->typeProduct->image,
                 ];
+                $product['group'] = ['name' => $product->category->group->name];
                 $product['available'] = $product->units > 0 ? $product->available : false;
                 return $product;
             });

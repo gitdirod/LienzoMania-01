@@ -2,7 +2,11 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Address;
+use App\Models\Phone;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+
 
 class StoreAddressRequest extends FormRequest
 {
@@ -24,6 +28,7 @@ class StoreAddressRequest extends FormRequest
     public function rules()
     {
         return [
+
             'address' => [
                 'required',
                 'string',
@@ -39,9 +44,9 @@ class StoreAddressRequest extends FormRequest
                 'string',
                 'max:255'
             ],
-            'envoice' => [
+            'type' => [
                 'required',
-                'boolean'
+                Rule::in([Address::TYPE_MAIN, Address::TYPE_ENVOICE, Address::TYPE_SEND])
             ],
             'people' => [
                 'required',
@@ -50,10 +55,13 @@ class StoreAddressRequest extends FormRequest
             ],
             'phone' => [
                 'required',
-                'string',
-                'max:255'
+                'array'
             ],
-
+            'phone.number' => 'required|string',
+            'phone.type' => [
+                'required',
+                Rule::in([Phone::TYPE_MAIN, Phone::TYPE_ENVOICE, Phone::TYPE_SEND])
+            ],
         ];
     }
 }

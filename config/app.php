@@ -198,6 +198,7 @@ return [
 
         // Intervention image
         Intervention\Image\ImageServiceProvider::class,
+        Barryvdh\Snappy\ServiceProvider::class,
 
     ],
 
@@ -215,6 +216,7 @@ return [
     'aliases' => Facade::defaultAliases()->merge([
         // 'ExampleClass' => App\Example\ExampleClass::class,
         'Image' => Intervention\Image\Facades\Image::class,
+        'PDF' => Barryvdh\Snappy\Facades\SnappyPdf::class,
     ])->toArray(),
 
 ];

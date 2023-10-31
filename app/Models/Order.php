@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Carbon\Carbon;
-use App\Models\Unit;
 use App\Models\User;
 use App\Models\Address;
 use App\Models\Payment;
@@ -20,7 +19,12 @@ use Intervention\Image\Facades\Image as ImageIntervention;
 class Order extends Model
 {
     use HasFactory;
-
+    const DAFAULT_ENVOICE = "No registra";
+    protected $fillable = [
+        'user_id',
+        'total',
+        'subtotal'
+    ];
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
@@ -30,36 +34,35 @@ class Order extends Model
     {
         return $this->belongsToMany(Product::class, 'order_products')->withPivot('quantity', 'subtotal', 'price')->with('image');
     }
-    public function payment()
+    public function orderPayment()
     {
         return $this->hasOne(OrderPayment::class, 'order_id')->latest();
     }
-    public function state()
+    public function orderState()
     {
         return $this->hasOne(OrderState::class, 'order_id')->latest();
     }
-    public function paymentImages()
+    public function payments()
     {
         return $this->hasMany(Payment::class, 'order_id')->latest();
+    }
+    public function payment()
+    {
+        return $this->hasOne(Payment::class, 'order_id')->latest();
     }
     public function addresses()
     {
         return $this->hasMany(OrderAddress::class, 'order_id')->latest();
     }
-    public function addresses_envoice()
+
+
+    public function getAddressesAttribute()
     {
-        return $this->hasOne(OrderAddress::class, 'order_id')
-            ->where('envoice', 1)
-            ->orderByDesc('created_at')
-            ->limit(1);
+        return $this->addresses()->get()->mapWithKeys(function ($address) {
+            return [$address->type => $address];
+        });
     }
-    public function addresses_payment()
-    {
-        return $this->hasOne(OrderAddress::class, 'order_id')
-            ->where('envoice', 0)
-            ->orderByDesc('created_at')
-            ->limit(1);
-    }
+
 
     public function insertImages($images)
     {
@@ -210,19 +213,11 @@ class Order extends Model
             if (isset($find_pro)) {
                 $pro = Product::find($product['id']);
 
-                $unit = new Unit;
-                $unit->product_id = $pro->id;
-                $unit->quantity = (int)$product['quantity'];
-                $unit->order_id = $this->id;
-                $unit->save();
-                // number_format((float)$product['price'], 2, '.', '');
                 $Array_products[] = [
                     'order_id' => $this->id,
                     'product_id' => $pro->id,
                     'quantity' => (int)$product['quantity'],
-                    // 'price' => $pro->price,
                     'price' => number_format((float)$pro->price, 2, '.', ''),
-                    // 'subtotal' => $pro->price * $product['quantity'],
                     'subtotal' => number_format((float)($pro->price * $product['quantity']), 2, '.', ''),
                     'created_at' => Carbon::now(),
                     'updated_at' => Carbon::now()
@@ -234,24 +229,6 @@ class Order extends Model
         return $Array_products;
     }
 
-    // public function checkQuantityProducts($products)
-    // {
-    //     foreach ($products as $product) {
-    //         $find_pro = Product::where('id', $product['id'])->first();
-    //         if (isset($find_pro)) {
-
-    //             $pro = Product::find($product['id']);
-    //             if (((int)$pro->units >= (int)$product['quantity'])) {
-    //                 return true;
-    //             } else {
-    //                 return false;
-    //             }
-    //         } else {
-    //             return false;
-    //         }
-    //     }
-    //     return true;
-    // }
     public function checkQuantityProducts($products)
     {
         foreach ($products as $product) {

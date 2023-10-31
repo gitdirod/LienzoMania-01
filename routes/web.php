@@ -3,7 +3,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ConfirmCount;
-
+use App\Http\Controllers\InvoiceController;
 
 /*
 |--------------------------------------------------------------------------
@@ -22,4 +22,10 @@ Route::get('/', function () {
 });
 Route::get('/test', function () {
     return php_ini_loaded_file();
+});
+// Route::get('/generate-pdf/{invoiceId}', [InvoiceController::class, 'generatePDF']);
+Route::get('/view-pdf', function () {
+    return view('pdf.example', [
+        'title' => "quieroLab"
+    ]);
 });

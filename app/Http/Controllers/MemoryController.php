@@ -74,17 +74,17 @@ class MemoryController extends Controller
     {
         try {
             $data = $request->validated();
-
+            $image_name = null;
             if (isset($data['image'])) {
-                $memory->deleteImage();
-                $memory->image = $memory->saveImage($data['images'], 500, 500);
+                $imageService->deleteImage('memories', $memory->image);
+                $image_name = $imageService->insertImage(Memory::IMAGE_WIDTH, Memory::IMAGE_HIGTH, 'memories', $data['image']);
             }
-            $memory->name = $data['name'];
-            $memory->description = $data['description'];
-            $memory->save();
-
+            $this->memoryService->updateMemory($memory->id, $data, $image_name);
             return $this->successResponse('Memoria actualizada correctamente.');
         } catch (\Illuminate\Database\QueryException $e) {
+            return $this->errorResponse('Error al actualizar en base de datos', $e->getMessage());
+        } catch (\Exception $e) {
+            return $this->errorResponse('Error inesperado al actualizar', $e->getMessage());
         }
     }
 
@@ -94,19 +94,18 @@ class MemoryController extends Controller
      * @param  \App\Models\Memory  $memory
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Request $request, Memory $memory)
+    public function destroy(Memory $memory, ImageService $imageService)
     {
-        if ($request->user()->role != "admin") {
-            return [
-                'state' => false,
-                'message' => 'Usuario no autorizado'
-            ];
+        try {
+            if ($memory) {
+                $imageService->deleteImage('memories', $memory->image);
+            }
+            $this->memoryService->destroyMemory($memory->id);
+            $this->successResponse('Memoria Eliminada Correctamente.');
+        } catch (\Illuminate\Database\QueryException $e) {
+            $this->errorResponse('Error al eliminar memoria en base de datos', $e->getMessage());
+        } catch (\Exception $e) {
+            $this->errorResponse('Error inesperado al eliminar memoria', $e->getMessage());
         }
-        $memory->deleteImage();
-        $memory->delete();
-        return [
-            'state' => true,
-            'message' => 'Memoria eliminada'
-        ];
     }
 }

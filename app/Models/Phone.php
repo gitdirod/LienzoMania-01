@@ -10,9 +10,13 @@ class Phone extends Model
 {
     use HasFactory;
 
+    const TYPE_MAIN = 'main';
+    const TYPE_ENVOICE = 'envoice';
+    const TYPE_SEND = 'send';
+
     protected $fillable = [
         'user_id',
-        'main',
+        'type',
         'number'
     ];
 

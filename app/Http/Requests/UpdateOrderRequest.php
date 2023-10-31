@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Models\OrderPayment;
+use App\Models\OrderState;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateOrderRequest extends FormRequest
@@ -24,23 +26,21 @@ class UpdateOrderRequest extends FormRequest
     public function rules()
     {
         return [
-            // 'envoice' => [
-            //     'required',
-            //     'unique:orders,envoice,' . $this->id,
-            //     'string',
-            //     'max:255'
-            // ],
+            'id' => [
+                'numeric',
+                'required'
+            ],
             'envoice' => [
                 'string',
                 'max:255'
             ],
-            'state' => [
+            'order_state' => [
                 'required',
-                'numeric'
+                'in:' . OrderState::STATE_BODEGA . ',' . OrderState::STATE_ENTREGADO . ',' . OrderState::STATE_TRAYECTO
             ],
-            'payment' => [
+            'order_payment' => [
                 'required',
-                'numeric'
+                'in:' . OrderPayment::STATE_PAGADO . ',' . OrderPayment::STATE_POR_PAGAR
             ],
         ];
     }

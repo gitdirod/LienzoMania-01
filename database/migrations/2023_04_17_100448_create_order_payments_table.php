@@ -15,12 +15,12 @@ return new class extends Migration
     {
         Schema::create('order_payments', function (Blueprint $table) {
             $table->id();
-            $table->timestamps();
             $table->foreignId('order_id')
                 ->constrained()
                 ->onUpdate('cascade')
                 ->onDelete('cascade');
             $table->string('state');
+            $table->timestamps();
         });
     }
 

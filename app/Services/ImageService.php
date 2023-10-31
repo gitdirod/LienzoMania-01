@@ -2,13 +2,15 @@
 
 namespace App\Services;
 
+use App\Models\Payment;
 use App\Models\Category;
-use Intervention\Image\Facades\Image as ImageIntervention;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\File;
-use Illuminate\Support\Collection;
-use App\Models\CategoryImage; // Si estás utilizando este modelo para guardar imágenes
 use App\Models\TypeProduct;
+use Illuminate\Support\Str;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\File;
+use App\Models\SoldOrderPaymentImage;
+use Intervention\Image\Facades\Image as ImageIntervention;
+use App\Models\CategoryImage; // Si estás utilizando este modelo para guardar imágenes
 
 class ImageService
 {
@@ -71,6 +73,31 @@ class ImageService
 
         return $name_image;
     }
+    public function insertImagePayment($image, $order_id, $user_id, $w = SoldOrderPaymentImage::IMAGE_WIDTH, $h = SoldOrderPaymentImage::IMAGE_HEIGTH)
+    {
+        $name_image = Str::uuid() . "." . $image->extension();
+        $image_server = ImageIntervention::make($image);
+
+        if ($image_server->width() > $image_server->height()) {
+            $image_server->widen($w);
+        } elseif ($image_server->height() > $image_server->width()) {
+            $image_server->heighten($h);
+        } else {
+            $image_server->resize($w, $h);
+        }
+
+        $image_path = public_path(SoldOrderPaymentImage::IMAGE_PATH) . $name_image;
+        $image_server->save($image_path);
+
+        SoldOrderPaymentImage::create([
+            'user_id' => $user_id,
+            'sold_order_id' => $order_id,
+            'name' => $name_image
+        ]);
+
+        return $name_image;
+    }
+
     public function deleteImage($path, $img)
     {
         if (isset($img)) {

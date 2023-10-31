@@ -3,12 +3,9 @@
 namespace App\Models;
 
 use App\Models\Group;
-use Illuminate\Support\Str;
 use App\Models\CategoryImage;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\File;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Intervention\Image\Facades\Image as ImageIntervention;
 
 class Category extends Model
 {
@@ -32,6 +29,17 @@ class Category extends Model
     {
         return $this->hasMany(CategoryImage::class, 'category_id');
     }
+    // public function image()
+    // {
+    //     return $this->hasOne(CategoryImage::class, 'category_id')->first();
+    // }
+    public function image()
+    {
+        return $this->hasOne(CategoryImage::class, 'category_id')->withDefault(function ($model) {
+            return $model->first();
+        });
+    }
+
     public function isShowed()
     {
         $products = $this->products()->get();

@@ -20,7 +20,7 @@ class GroupController extends Controller
         $this->middleware('auth')->except(['index', 'show']);
 
         // Asegura que el usuario puede realizar acciones de administrador solo para los métodos 'store' y 'update'
-        $this->middleware('can:admin')->only(['store', 'update']);
+        $this->middleware('can:admin')->only(['store', 'update', 'destroy']);
         $this->groupService = $groupService;
     }
 
