@@ -19,7 +19,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['https://lienzomaniaec.com', 'https://www.lienzomaniaec.com', 'http://127.0.0.1:5173'],
+    'allowed_origins' => ['https://tecnitools.ec', 'https://www.tecnitools.ec', 'http://127.0.0.1:5173'],
 
     'allowed_origins_patterns' => ['*'],
 
